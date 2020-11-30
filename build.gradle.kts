@@ -1,8 +1,14 @@
+import org.jetbrains.kotlin.backend.common.onlyIf
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.4.10"
     `maven-publish`
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
 
 group = "com.dvd.kotlin.jnotify4kt"
@@ -13,25 +19,26 @@ repositories {
 }
 
 dependencies {
-    implementation(kotlin("stdlib"))
+    implementation(kotlin("stdlib-jdk8"))
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.4.2")
 
     implementation("net.contentobjects.jnotify:jnotify:0.94")
 
     testImplementation("junit", "junit", "4.12")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.4.2")
 }
 
 publishing {
     repositories {
-        maven {
-            name = "jnotify4kt"
-            url = uri("https://maven.pkg.github.com/dvdandroid/jnotify4kt")
-            credentials {
-                username = System.getenv("GITHUB_ACTOR")
-                password = System.getenv("GITHUB_TOKEN")
+        onlyIf({ System.getenv("CI")?.toBoolean() == true }, {
+            maven {
+                name = "GithubPackages"
+                url = uri("https://maven.pkg.github.com/dvdandroid/jnotify4kt")
+                credentials {
+                    username = System.getenv("GITHUB_ACTOR")
+                    password = System.getenv("GITHUB_TOKEN")
+                }
             }
-        }
+        })
     }
     publications {
         register("gpr", MavenPublication::class.java) {
