@@ -28,6 +28,37 @@ data class FileEvent(
     val oldName: String? = null,
     val name: String? = null,
 ) {
+
+    fun whenEvent(
+        onInitialized: (File) -> Unit = { _ -> (Unit) },
+        onCreated: (File, String) -> Unit = { _, _ -> (Unit) },
+        onRenamed: (File, String, String) -> Unit = { _, _, _ -> (Unit) },
+        onModified: (File, String) -> Unit = { _, _ -> (Unit) },
+        onDeleted: (File, String) -> Unit = { _, _ -> (Unit) },
+    ) = when (kind) {
+        Kind.Init -> onInitialized(file)
+        Kind.Created -> onCreated(file, name!!)
+        Kind.Renamed -> onRenamed(file, oldName!!, name!!)
+        Kind.Modified -> onModified(file, name!!)
+        Kind.Deleted -> onDeleted(file, name!!)
+    }
+
+    fun whenEvent(event: FileEventChange): Unit = when (kind) {
+        Kind.Init -> event.onInitialized(file)
+        Kind.Created -> event.onCreated(file, name!!)
+        Kind.Renamed -> event.onRenamed(file, oldName!!, name!!)
+        Kind.Modified -> event.onModified(file, name!!)
+        Kind.Deleted -> event.onDeleted(file, name!!)
+    }
+
+    interface FileEventChange {
+        fun onInitialized(file: File) {}
+        fun onCreated(file: File, name: String)
+        fun onModified(file: File, name: String)
+        fun onRenamed(file: File, oldName: String, name: String)
+        fun onDeleted(file: File, name: String)
+    }
+
     enum class Kind {
         Init,
         Created,
@@ -46,7 +77,8 @@ class KNotify(
     private val channel: Channel<FileEvent> = Channel()
 ) : Channel<FileEvent> by channel {
 
-    private var watchId: Int = -1
+    var watchId: Int = -1
+        private set
 
     init {
         scope.launch(Dispatchers.IO) {
@@ -71,8 +103,11 @@ class KNotify(
                     override fun fileModified(wd: Int, rootPath: String, name: String) {
                         if (ignoreWinTempFiles && (name.startsWith("~") || name.endsWith("~"))) return
 
+                        val file = File(rootPath, name)
+                        if (file.exists().not()) return
+
                         scope.launch {
-                            channel.send(FileEvent(File(rootPath, name), FileEvent.Kind.Modified, oldName = null, name))
+                            channel.send(FileEvent(file, FileEvent.Kind.Modified, oldName = null, name))
                         }
                     }
 

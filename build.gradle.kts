@@ -11,7 +11,7 @@ java {
     withSourcesJar()
 }
 
-group = "com.dvd.kotlin.jnotify4kt"
+group = "com.github.dvdandroid"
 version = "0.94-SNAPSHOT"
 
 repositories {
