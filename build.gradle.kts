@@ -1,4 +1,3 @@
-import org.jetbrains.kotlin.backend.common.onlyIf
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -9,6 +8,10 @@ plugins {
 java {
     withJavadocJar()
     withSourcesJar()
+
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(8))
+    }
 }
 
 group = "com.github.dvdandroid"
@@ -29,7 +32,7 @@ dependencies {
 
 publishing {
     repositories {
-        onlyIf({ System.getenv("CI")?.toBoolean() == true }, {
+        if (System.getenv("CI")?.toBoolean() == true) {
             maven {
                 name = "GithubPackages"
                 url = uri("https://maven.pkg.github.com/dvdandroid/jnotify4kt")
@@ -38,7 +41,7 @@ publishing {
                     password = System.getenv("GITHUB_TOKEN")
                 }
             }
-        })
+        }
     }
     publications {
         register("gpr", MavenPublication::class.java) {
